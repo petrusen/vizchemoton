@@ -1,7 +1,9 @@
 # Vizchemoton
 
-This code reads a chemical reaction network generated with Chemoton[ref], and generates and html file using
-the amktools[ref] in order to depict the reaction network.
+This code reads a chemical reaction network generated with Chemoton[1], and generates and html file using
+the amktools[2] in order to depict the reaction network.
+
+![Example Image](example_crn_html.png)
 
 ## Dependencies
 
@@ -40,13 +42,8 @@ python3 viz_chemoton.py ./reactions_epetrus_241010.csv ./compounds_epetrus_24101
 
 ```
 
-## Examples
-
-insert image
-
-
 ## References
 
 1. a) Gregor N. Simm, Markus Reiher. *J. Chem. Theory Comput.* **2017**, 13, 12, 6108-6119.  b) Jan P. Unsleber, Stephanie A. Grimmel, Markus Reiher. *J. Chem. Theory Comput.* **2022**, 18, 9, 5393-5409
-2. Diego Garay-Ruiz, Moises Alvarez-Moreno, Carles Bo, Emilio Martínez-Nú�ez. *ACS Phys. Chem Au* **2022**, 2, 3, 225-236.
+2. Diego Garay-Ruiz, Moises Alvarez-Moreno, Carles Bo, Emilio Martinez-Nunez. *ACS Phys. Chem Au* **2022**, 2, 3, 225-236.
 
