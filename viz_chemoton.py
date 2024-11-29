@@ -198,7 +198,7 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
     for nd in G.nodes(data=True):
         comp = compounds[nd[0]]
         # check for adducts, where both molecules must be brought together
-        if "//" in comp["id"]:
+        if "//" in comp["mongodb_id"]:
             xyz_list = comp["xyz"]
             xyz0_arr = np.array([item[1] for item in xyz_list[0]]) * bohr_to_ang
             cntr = xyz0_arr.mean(axis=0)
@@ -211,27 +211,40 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
                 xyz_nw = [[item[0],list(xyz_arr[ii])] for ii,item in enumerate(xyz)]
                 xyz_full += xyz_nw
 
+            nd[1]["energy"] = sum(comp["energy"])
+            nd[1]["charge"] = ";".join([str(item) for item in comp["charge"]])
+            nd[1]["multiplicity"] = ";".join([str(item) for item in comp["multiplicity"]])
+            nd[1]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
         else:
             xyz_list = comp["xyz"]
             # scale to angstrom
-            xyz_arr = np.array([item[1] for item in xyz_list[0]]) * bohr_to_ang
-            xyz_full = [[item[0],list(xyz_arr[ii])] for ii,item in enumerate(xyz_list[0])]
+            print(xyz_list)
+            xyz_arr = np.array([item[1] for item in xyz_list]) * bohr_to_ang
+            xyz_full = [[item[0],list(xyz_arr[ii])] for ii,item in enumerate(xyz_list)]
+            nd[1]["energy"] = comp["energy"]
+            nd[1]["charge"] = comp["charge"]
+            nd[1]["multiplicity"] = comp["multiplicity"]
+            nd[1]["formula"] = formula_from_xyz_block(xyz_list)
 
         # add this to the graph, with xyz-block format
         xyz_block = "\n".join(["%s %.6f %.6f %.6f" % (item[0],*item[1]) for item in xyz_full])
         nd[1]["geometry"] = xyz_block
-        nd[1]["energy"] = sum(comp["energy"])
         nd[1]["ZPVE"] = 0.0
         nd[1]["name"] = nd[0]
         nd[1]["degree"] = G.degree(nd[0])
         # handle charge and multiplicity as strings to properly treat fragments
-        nd[1]["charge"] = ";".join([str(item) for item in comp["charge"]])
-        nd[1]["multiplicity"] = ";".join([str(item) for item in comp["multiplicity"]])
-        nd[1]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
         nd[1]["neighbors"] = list(G.neighbors(nd[0]))
 
     for ii,ed in enumerate(G.edges(data=True)):
-        e1,e2 = [sum(compounds[nd]["energy"]) for nd in ed[0:2]]
+        #e1,e2 = [sum(compounds[nd]["energy"]) for nd in ed[0:2]]
+        tmp = list()
+        for nd in ed[0:2]:
+            if isinstance(compounds[nd]['energy'], list):
+                tmp.append(sum(compounds[nd]['energy']))
+            else:
+                tmp.append(compounds[nd]['energy'])
+        e1, e2 = tmp
+
         if ed[2]["tsidx"] == "None":
             e_ts = max(e1,e2)
             ed[2]["name"] = "TSb_%04d" % ii
@@ -245,23 +258,35 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
             continue
         ts_compound = compounds[ed[2]["tsidx"]]
         xyz_list = ts_compound["xyz"]
-        geom = scale_xyz_list(xyz_list[0])
+        geom = scale_xyz_list(xyz_list)
         ed[2]["geometry"] = xyz_list_to_xyz_block(geom)
         ed[2]["name"] = "TS_%04d" % int(ed[2]["tsidx"])
         ### compute activation energy
-        e_ts = sum(ts_compound["energy"])
+        if isinstance(ts_compound["energy"], list):
+            e_ts = sum(ts_compound["energy"])
+        else:
+            e_ts = ts_compound["energy"]
+        #e_ts = sum(ts_compound["energy"])
         delta_e1 = (e_ts - e1,ed[0])
         delta_e2 = (e_ts - e2,ed[1])
         ### save string representations
         ed[2]["deltaE1"] = "%.2f (%s)" % delta_e1
         ed[2]["deltaE2"] = "%.2f (%s)" % delta_e2
-        ed[2]["energy"] = sum(ts_compound["energy"])
+        
+        #ed[2]["energy"] = sum(ts_compound["energy"])
         ed[2]["ZPVE"] = 0.0
         # handle charge and multiplicity as strings to properly treat fragments
-        ed[2]["charge"] = ";".join([str(item) for item in ts_compound["charge"]])
-        ed[2]["multiplicity"] = ";".join([str(item) for item in ts_compound["multiplicity"]])
-
-        ed[2]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
+        if isinstance(ts_compound["charge"], list):
+          ed[2]["energy"] = sum(ts_compound["energy"])
+          ed[2]["charge"] = ";".join([str(item) for item in ts_compound["charge"]])
+          ed[2]["multiplicity"] = ";".join([str(item) for item in ts_compound["multiplicity"]])
+          ed[2]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
+        
+        else:
+          ed[2]["energy"] = ts_compound["energy"]
+          ed[2]["charge"] = ts_compound["charge"]
+          ed[2]["multiplicity"] = ts_compound["multiplicity"]
+          ed[2]["formula"] = formula_from_xyz_block(xyz_list)
     return G
 
 def read_files(reaction_file,compounds_file):
