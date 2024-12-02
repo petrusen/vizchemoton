@@ -243,6 +243,7 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
         nd[1]["charge"] = ";".join([str(item) for item in comp["charge"]])
         nd[1]["multiplicity"] = ";".join([str(item) for item in comp["multiplicity"]])
         nd[1]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
+        nd[1]["neighbors"] = list(G.neighbors(nd[0]))
 
     for ii,ed in enumerate(G.edges(data=True)):
         e1,e2 = [sum(compounds[nd]["energy"]) for nd in ed[0:2]]
