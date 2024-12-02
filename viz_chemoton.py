@@ -39,6 +39,7 @@ def build_dashboard(G,title,outfile,size=(1400,800),
 
     style_template = """
     {% block postamble %}
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/dgarayr/jsmol_to_bokeh/jsmol_to_bokeh.min.js"></script>
     <style>
     .bk-root .bk-btn-default {
         font-size: 1.2vh;
@@ -193,12 +194,23 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
     G = nx.Graph()
     edge_list = [(item[0],item[1],{"tsidx":item[2]}) for item in reaction_list]
     G.add_edges_from(edge_list)
+    node_renaming = {}
+
+    ### Preprocessing compounds: for consistency, convert single elements to 1-element lists
+    tgt_vars = ["energy","charge","multiplicity"]
+    for comp in compounds.values():
+        for vv in tgt_vars:
+            if not isinstance(comp[vv],list):
+                comp[vv] = [comp[vv]]
 
     # add node information
     for nd in G.nodes(data=True):
         comp = compounds[nd[0]]
-        # check for adducts, where both molecules must be brought together
-        if "//" in comp["id"]:
+        # nodes will be renamed to allow compounds
+        # check for adducts, where both molecules must be brought together -> list of IDs
+        if isinstance(comp["crn_id"],list):
+            node_name = "+".join(comp["crn_id"])
+
             xyz_list = comp["xyz"]
             xyz0_arr = np.array([item[1] for item in xyz_list[0]]) * bohr_to_ang
             cntr = xyz0_arr.mean(axis=0)
@@ -212,23 +224,25 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
                 xyz_full += xyz_nw
 
         else:
-            xyz_list = comp["xyz"]
+            node_name = comp["crn_id"]
+            xyz_list = [comp["xyz"]]
             # scale to angstrom
             xyz_arr = np.array([item[1] for item in xyz_list[0]]) * bohr_to_ang
             xyz_full = [[item[0],list(xyz_arr[ii])] for ii,item in enumerate(xyz_list[0])]
 
+        node_renaming[nd[0]] = node_name
         # add this to the graph, with xyz-block format
         xyz_block = "\n".join(["%s %.6f %.6f %.6f" % (item[0],*item[1]) for item in xyz_full])
         nd[1]["geometry"] = xyz_block
+
         nd[1]["energy"] = sum(comp["energy"])
         nd[1]["ZPVE"] = 0.0
-        nd[1]["name"] = nd[0]
+        nd[1]["name"] = node_name
         nd[1]["degree"] = G.degree(nd[0])
         # handle charge and multiplicity as strings to properly treat fragments
         nd[1]["charge"] = ";".join([str(item) for item in comp["charge"]])
         nd[1]["multiplicity"] = ";".join([str(item) for item in comp["multiplicity"]])
         nd[1]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
-        nd[1]["neighbors"] = list(G.neighbors(nd[0]))
 
     for ii,ed in enumerate(G.edges(data=True)):
         e1,e2 = [sum(compounds[nd]["energy"]) for nd in ed[0:2]]
@@ -244,10 +258,12 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
             ed[2]["deltaE2"] = "%.2f (%s)" % delta_e2
             continue
         ts_compound = compounds[ed[2]["tsidx"]]
-        xyz_list = ts_compound["xyz"]
+        xyz_list = [ts_compound["xyz"]]
         geom = scale_xyz_list(xyz_list[0])
         ed[2]["geometry"] = xyz_list_to_xyz_block(geom)
-        ed[2]["name"] = "TS_%04d" % int(ed[2]["tsidx"])
+        #ed[2]["name"] = "TS_%04d" % int(ed[2]["tsidx"])
+        ed[2]["name"] = ts_compound["crn_id"]
+
         ### compute activation energy
         e_ts = sum(ts_compound["energy"])
         delta_e1 = (e_ts - e1,ed[0])
@@ -262,6 +278,12 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
         ed[2]["multiplicity"] = ";".join([str(item) for item in ts_compound["multiplicity"]])
 
         ed[2]["formula"] = ";".join([formula_from_xyz_block(xyz) for xyz in xyz_list])
+
+    ## Apply renaming
+    nx.relabel_nodes(G,node_renaming,copy=False)
+    # and add neighbors now to ensure right naming
+    for nd in G.nodes(data=True):
+        nd[1]["neighbors"] = list(G.neighbors(nd[0]))
     return G
 
 def read_files(reaction_file,compounds_file):
