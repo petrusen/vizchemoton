@@ -307,6 +307,9 @@ def read_files(reaction_file,compounds_file):
 
 
 def main():
+
+
+
     parser = argparse.ArgumentParser(description="Generate Chemoton visualization")
     parser.add_argument("reaction_file",help="File specifying reactions as node1,node2,ts index integers",type=str)
     parser.add_argument("compounds_file",help="JSON file containing information about all compounds",type=str)
