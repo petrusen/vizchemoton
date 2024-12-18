@@ -11,6 +11,286 @@ import RXVisualizer as arxviz
 import networkx as nx
 import argparse
 from collections import Counter
+import numpy as np
+#import networkx as nx
+
+
+# SCINE imports
+import scine_utilities as utils
+import scine_database as db
+from scine_chemoton.gears.pathfinder import Pathfinder as pf
+from scine_database.energy_query_functions import (get_energy_change,
+    get_barriers_for_elementary_step_by_type,
+    rate_constant_from_barrier, get_energy_for_structure
+)
+#from itertools import combinations
+#from kinetic_utility_library import *
+
+def get_energy_and_barriers(energy_type, es_id, elementary_steps, model1, structures, properties, es_from_graph):
+
+    _energy = get_energy_change(db.ElementaryStep(es_id, elementary_steps), energy_type,
+                                           model1, structures, properties)
+    barriers = get_barriers_for_elementary_step_by_type(es_from_graph, energy_type,
+                                                                    model1,
+                                                                    structures,
+                                                                    properties)
+
+    if None in barriers: # or None == _energy_i or None == _energy_j:
+        not_None = False
+    else:
+        not_None = True
+
+    return _energy, barriers, not_None
+
+
+def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=False):
+    """
+    Extract the chemical reactions, compounds and transition states from the MongoDB where the exploration
+    with Chemoton was executed.
+    """
+
+    manager = db.Manager()
+    credentials = db.Credentials(ip, int(port), db_name)
+    manager.set_credentials(credentials)
+    manager.connect()
+    model1 = db.Model(dict_method["method_family"], dict_method["method"], dict_method["basis_set"])
+    model1.program = dict_method["program"]
+
+    #########################################################################
+
+    calculations = manager.get_collection("calculations")
+    structures = manager.get_collection("structures")
+    reactions = manager.get_collection("reactions")
+    flasks = manager.get_collection("flasks")
+    compounds = manager.get_collection("compounds")
+    properties = manager.get_collection('properties')
+    elementary_steps = manager.get_collection('elementary_steps')
+
+    # # # Load Pathfinder and assign NetworkX Digraph
+    pathfinder = pf(manager)
+
+    if isinstance(pathfinder_json, str):
+        graph_json_filtered = pathfinder_json
+        pathfinder.load_graph(graph_json_filtered)
+    else:
+        print("HI")
+        pathfinder.options.model = model1
+        pathfinder.options.graph_handler = "barrier"
+        pathfinder.options.use_structure_model = True
+        pathfinder.options.structure_model = model1  # primitive_model # db.Model("gfn2", "gfn2", "")
+        pathfinder.build_graph()
+        pathfinder.export_graph("crn_pathfinder.json")
+
+
+    # print(len([node for node in pathfinder.graph_handler.graph.nodes if ';' in node]) / 2)
+
+    # # # List of compounds and reactions
+    cmp_list = [node for node in pathfinder.graph_handler.graph.nodes if ";" not in node]
+    lhs_rxn_list = [node for node in pathfinder.graph_handler.graph.nodes if ";0;" in node]
+
+    cmp_dict = {}
+    stoich_id_dict = {}
+    excluded_rxn, activation_barriers = [], []
+    tetramolecular, l_new_reac, l_reac_id = 0, list(), list()
+    comp_idx = len(cmp_list)
+    trimolecular_constants = list()
+    my_list = []
+    cmp_idx = 1
+    html_reactions, html_compounds = list(), dict()
+
+    for rxn_ind, rxn_id in enumerate(lhs_rxn_list):
+        rxn = db.Reaction(db.ID(rxn_id[:-3]), reactions)
+        reactants = rxn.get_reactants(db.Side.BOTH)
+        lhs, rhs = reactants
+        s_lhs, s_rhs = len(lhs), len(rhs)
+        reactants = (lhs, rhs)
+
+        if (s_lhs < 3 and s_rhs < 3):  # and not any(item in rxn_id for item in my_list):  # Unimolecular and Bimolecular
+            # # # Get reagent indices
+            r_index = [0.0, 0.0]
+            count = 0
+            cmp_dict_keys = cmp_dict.keys()
+            if len(reactants[0]) == 1:
+                node_x = reactants[0][0].string()
+                if node_x in cmp_dict_keys:
+                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
+                else:
+                    cmp_dict[node_x] = cmp_idx
+                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
+                    cmp_idx = cmp_idx + 1
+
+            elif len(reactants[0]) == 2:
+
+                for node_i in [o.string() for o in reactants[0]]:
+                    if node_i in cmp_dict_keys:
+                        r_index[count * -1 + 1] = str(cmp_dict[node_i])
+                    else:
+                        cmp_dict[node_i] = cmp_idx
+                        r_index[count * -1 + 1] = str(cmp_dict[node_i])
+                        cmp_idx = cmp_idx + 1
+
+                node_x = "//".join(sorted([o.string() for o in reactants[0]]))
+                if node_x in cmp_dict_keys:
+                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
+                else:
+                    cmp_dict[node_x] = cmp_idx
+                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
+                    cmp_idx = cmp_idx + 1
+
+            p_index = [0.0, 0.0]
+            if len(reactants[1]) == 1:
+                node_y = reactants[1][0].string()
+                if node_y in cmp_dict_keys:
+                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
+                else:
+                    cmp_dict[node_y] = cmp_idx
+                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
+                    cmp_idx = cmp_idx + 1
+
+            elif len(reactants[1]) == 2:
+
+                for node_i in [o.string() for o in reactants[1]]:
+                    if node_i in cmp_dict_keys:
+                        p_index[count * -1 + 1] = str(cmp_dict[node_i])
+                    else:
+                        cmp_dict[node_i] = cmp_idx
+                        p_index[count * -1 + 1] = str(cmp_dict[node_i])
+                        cmp_idx = cmp_idx + 1
+
+                node_y = "//".join(sorted([o.string() for o in reactants[1]]))
+                if node_y in cmp_dict_keys:
+                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
+                else:
+                    cmp_dict[node_y] = cmp_idx
+                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
+                    cmp_idx = cmp_idx + 1
+
+            # # # Get selected Elementary Step if present in graph
+            if "elementary_step_id" in pathfinder.graph_handler.graph.nodes(data=True)[rxn_id]:
+                es_id = db.ID(
+                    pathfinder.graph_handler.graph.nodes(data=True)[rxn_id]["elementary_step_id"])
+                es_from_graph = db.ElementaryStep(es_id, elementary_steps)
+                _energy, barriers, not_None = get_energy_and_barriers('electronic_energy', es_id, elementary_steps,
+                                                                      model1, structures, properties, es_from_graph)
+
+                if es_from_graph.get_type() == db.ElementaryStepType.BARRIERLESS and not_None and _energy != None:  # check as jacs
+                    html_reactions.append([cmp_dict[node_x], cmp_dict[node_y], None])
+                elif not_None:
+                    b1, b2 = barriers
+                    node_ts = es_from_graph.get_transition_state().string() + ";"
+                    if node_ts in cmp_dict.keys():
+                        pass
+                    else:
+                        cmp_dict[node_ts] = cmp_idx
+                        cmp_idx = cmp_idx + 1
+                    html_reactions.append([cmp_dict[node_x], cmp_dict[node_y], cmp_dict[node_ts]])
+
+    for compound_id in cmp_dict:
+        html_compounds[cmp_dict[compound_id]] = {}
+
+        if "//" in compound_id:
+            # continue
+            ids = compound_id.split("//")
+            html_compounds[cmp_dict[compound_id]]['crn_id'] = list()
+            html_compounds[cmp_dict[compound_id]]['_mongodb_id'] = list()
+            html_compounds[cmp_dict[compound_id]]['mongodb_id'] = list()
+            html_compounds[cmp_dict[compound_id]]['xyz'] = list()
+            html_compounds[cmp_dict[compound_id]]['charge'] = list()
+            html_compounds[cmp_dict[compound_id]]['multiplicity'] = list()
+            html_compounds[cmp_dict[compound_id]]['energy'] = list()
+            html_compounds[cmp_dict[compound_id]]['method'] = list()
+            html_compounds[cmp_dict[compound_id]]['basis_set'] = list()
+            html_compounds[cmp_dict[compound_id]]['program'] = list()
+            html_compounds[cmp_dict[compound_id]]['solvent'] = list()
+            html_compounds[cmp_dict[compound_id]]['solvation'] = list()
+            for _ids in ids:
+                type_object = pathfinder.graph_handler.graph.nodes(data=True)[_ids]["type"]
+                if type_object == db.CompoundOrFlask.COMPOUND.name:
+                    compound = db.Compound(db.ID(_ids), compounds)
+                    html_compounds[cmp_dict[compound_id]]['crn_id'].append("c" + str(cmp_dict[_ids]))
+                else:
+                    compound = db.Flask(db.ID(_ids), flasks)
+                    html_compounds[cmp_dict[compound_id]]['crn_id'].append("f" + str(cmp_dict[_ids]))
+                structure = compound.get_centroid()
+                structure_obj = db.Structure(structure, structures)
+                xyz = [(str(o.element), tuple(o.position)) for o in structure_obj.get_atoms()]
+                #print(structure_obj.get_charge(), structure_obj.multiplicity, dir(structure_obj))
+                z, s = structure_obj.get_charge(), structure_obj.multiplicity
+                e = get_energy_for_structure(structure_obj, 'electronic_energy', model1, structures, properties)
+                e_kj = e * utils.KJPERMOL_PER_HARTREE
+                html_compounds[cmp_dict[compound_id]]['_mongodb_id'].append(_ids)
+                html_compounds[cmp_dict[compound_id]]['xyz'].append(xyz)
+                html_compounds[cmp_dict[compound_id]]['charge'].append(z)
+                html_compounds[cmp_dict[compound_id]]['multiplicity'].append(s)
+                html_compounds[cmp_dict[compound_id]]['energy'].append(e_kj)
+                html_compounds[cmp_dict[compound_id]]['method'].append(model1.method)
+                html_compounds[cmp_dict[compound_id]]['basis_set'].append(model1.basis_set)
+                html_compounds[cmp_dict[compound_id]]['program'].append(model1.program + " " + model1.version)
+                html_compounds[cmp_dict[compound_id]]['solvent'].append(model1.solvent)
+                html_compounds[cmp_dict[compound_id]]['solvation'].append(model1.solvation)
+
+            html_compounds[cmp_dict[compound_id]]['mongodb_id'] = "//".join(
+                html_compounds[cmp_dict[compound_id]]['_mongodb_id'])
+
+        elif ";" in compound_id:  # its a ts
+            structure = compound_id[0:-1]
+            structure_obj = db.Structure(db.ID(structure), structures)
+            xyz = [(str(o.element), tuple(o.position)) for o in structure_obj.get_atoms()]
+            z, s = structure_obj.get_charge(), structure_obj.multiplicity
+            e = get_energy_for_structure(structure_obj, 'electronic_energy', model1, structures, properties)
+            e_kj = e * utils.KJPERMOL_PER_HARTREE
+            model_obj = structure_obj.get_model()
+            # print(structure_obj.get_charge(), structure_obj.multiplicity, dir(structure_obj))
+            html_compounds[cmp_dict[compound_id]]['crn_id'] = "ts" + str(cmp_dict[compound_id])
+            html_compounds[cmp_dict[compound_id]]['mongodb_id'] = compound_id
+            html_compounds[cmp_dict[compound_id]]['xyz'] = xyz
+            html_compounds[cmp_dict[compound_id]]['charge'] = z
+            html_compounds[cmp_dict[compound_id]]['multiplicity'] = s
+            html_compounds[cmp_dict[compound_id]]['energy'] = e_kj
+            html_compounds[cmp_dict[compound_id]]['method'] = model1.method
+            html_compounds[cmp_dict[compound_id]]['basis_set'] = model1.basis_set
+            html_compounds[cmp_dict[compound_id]]['program'] = model1.program + " 5.0.3"
+            html_compounds[cmp_dict[compound_id]]['solvent'] = model1.solvent
+            html_compounds[cmp_dict[compound_id]]['solvation'] = model1.solvation
+
+        else:
+            type_object = pathfinder.graph_handler.graph.nodes(data=True)[compound_id]["type"]
+            if type_object == db.CompoundOrFlask.COMPOUND.name:
+                compound = db.Compound(db.ID(compound_id), compounds)
+                html_compounds[cmp_dict[compound_id]]['crn_id'] = "c" + str(cmp_dict[compound_id])
+            else:
+                html_compounds[cmp_dict[compound_id]]['crn_id'] = "f" + str(cmp_dict[compound_id])
+                compound = db.Flask(db.ID(compound_id), flasks)
+            structure = compound.get_centroid()
+            structure_obj = db.Structure(structure, structures)
+            xyz = [(str(o.element), tuple(o.position)) for o in structure_obj.get_atoms()]
+            z, s = structure_obj.get_charge(), structure_obj.multiplicity
+            e = get_energy_for_structure(structure_obj, 'electronic_energy', model1, structures, properties)
+            e_kj = e * utils.KJPERMOL_PER_HARTREE
+            model_obj = structure_obj.get_model()
+            html_compounds[cmp_dict[compound_id]]['mongodb_id'] = compound_id
+            html_compounds[cmp_dict[compound_id]]['xyz'] = xyz
+            html_compounds[cmp_dict[compound_id]]['charge'] = z
+            html_compounds[cmp_dict[compound_id]]['multiplicity'] = s
+            html_compounds[cmp_dict[compound_id]]['energy'] = e_kj
+            html_compounds[cmp_dict[compound_id]]['method'] = model1.method  # model_obj.method
+            html_compounds[cmp_dict[compound_id]]['basis_set'] = model1.basis_set  # model_obj.basis_set
+            html_compounds[cmp_dict[compound_id]][
+                'program'] = model1.program + " 5.0.3"  # model_obj.program+" "+model_obj.version
+            html_compounds[cmp_dict[compound_id]]['solvent'] = model1.solvent  # model_obj.solvent
+            html_compounds[cmp_dict[compound_id]]['solvation'] = model1.solvation  # model_obj.solvation
+
+    # Open a file in write mode
+    with open('/home/petrusen/reactions.csv', 'w') as f:
+        # Loop through the list and write each tuple to the file
+        for item in html_reactions:
+            r, p, ts = item
+            f.write("{r},{p},{ts}\n".format(r=r, p=p, ts=ts))
+
+    with open('/home/petrusen/compounds.json', 'w') as file:
+        file.write(json.dumps(html_compounds))  # use `json.loads` to do the revers
+
+    return html_reactions, html_compounds
 
 def build_dashboard(G,title,outfile,size=(1400,800),
                            layout_function=nx.kamada_kawai_layout,
@@ -308,23 +588,20 @@ def read_files(reaction_file,compounds_file):
 
 def main():
 
-
-
-    parser = argparse.ArgumentParser(description="Generate Chemoton visualization")
-    parser.add_argument("reaction_file",help="File specifying reactions as node1,node2,ts index integers",type=str)
-    parser.add_argument("compounds_file",help="JSON file containing information about all compounds",type=str)
-    g1 = parser.add_argument_group("Additional options")
-    g1.add_argument("--dist_adduct",type=float,default=3.0,help="Distance between CM of adduct geometries in 3D representation")
-    g1.add_argument("--output_file",type=str,default="network.html",help="Name of the output HTML file")
-    g1.add_argument("--title",type=str,default="Chemoton graph",help="Title of the visualization")
-    try:
-        args = parser.parse_args()
-    except:
-        parser.print_help()
-        sys.exit()
-    entries,compounds = read_files(args.reaction_file,args.compounds_file)
-    G = process_graph(entries,compounds,args.dist_adduct)
-    build_dashboard(G,args.title,args.output_file,
+    db_name = "ozone_tme_lcpbe"
+    ip = 'localhost'
+    port = '8889'
+    dict_method = {"method_family": "dft", "method": 'lc-pbe', "basis_set": "def2-svp",
+                 "program": "orca", }
+    entries,compounds = get_reactions_and_compounds(db_name, ip, port, dict_method, 
+            pathfinder_json=False) #'crn_pathfinder.json')#pathfinder_json=False)
+   
+    entries,compounds = read_files("/home/petrusen/reactions.csv","/home/petrusen/compounds.json")
+    dist_adduct = 3.0
+    output_file = "network.html"
+    title_html = "Chemoton graph"
+    G = process_graph(entries,compounds,3.0)
+    build_dashboard(G,title_html,output_file,
                                size=(1400,800),
                                layout_function=nx.kamada_kawai_layout,
                                map_field="degree")

@@ -1,4 +1,4 @@
-# Vizchemoton - Visualization of Reaction Networks Generated with Chemoton
+# VizChemoton - Visualization of Reaction Networks Generated with Chemoton
 
 This package allows the visualization of chemical reaction networks (CRNs) generated with [Chemoton](https://github.com/qcscine/chemoton)[1] through the generation of standalone HTML files with the [amk-tools](https://github.com/dgarayr/amk_tools),[2] ultimately allowing the user to interact with the network via browser.
 
@@ -22,7 +22,20 @@ The research group of Carles Bo at ICIQ (Tarragona, Spain) developed a library, 
 
 > Here we tailor the application of *amk-tools* to the visualization of CRNs generated with *Chemoton*. 
 
+
+## Code overview
+
+In the following Figure we describe the different modules -described above- that VizChemoton
+uses to generate the html files.
+
+![Example Image](./docs/vizchemoton_architecture.png)
+
+Notice that the chemical data present in the network.html can also be uploaded in the FAIR repository
+[ioChem-BD](http://dx.doi.org/10.19061/iochem-bd-6-430) via using the wrapper [json2orca](https://github.com/gruberlopez/json2orca). 
+
 ## Dependencies
+
+Dependencies are detailed in the requierements.txt file and in the table below.
 
 | Package              | Version |
 |----------------------|---------|
@@ -35,7 +48,8 @@ The research group of Carles Bo at ICIQ (Tarragona, Spain) developed a library, 
 | scine-sparrow        | 5.1.0   |
 | scine-utilities      | 9.0.0   |
 
-## Instalation
+
+## Instalation 
 
 ```bash
 
@@ -54,14 +68,19 @@ pip install -e ./amk_tools/
 git clone https://github.com/qcscine/heron.git
 pip install ./heron
 
-# Run the code of this repository to obtain the html
-python3 viz_chemoton.py ./reactions_epetrus_241010.csv ./compounds_epetrus_241010.txt
-
 ```
 
 ## Usage of the HTML files
 
-to-do 
+```bash
+
+# Edit the main file
+vi ./vizchemoton/__main__.py
+
+# Run the code of this repository to obtain the html
+python3 -m viz_chemoton.py 
+
+```
 
 ## References
 
