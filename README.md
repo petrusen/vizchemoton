@@ -62,14 +62,17 @@ Dependencies are detailed in the requierements.txt file and in the table below.
 conda create --name my_env python=3.6
 conda install -c conda-forge nodejs=14
 
-# Install amk-tools
-git clone https://gitlab.com/dgarayr/amk_tools.git
-pip install -e ./amk_tools/ 
-
 # Install Chemoton
 git clone https://github.com/qcscine/chemoton.git
-pip install -r ./chemoton/requirements.txt
-pip install ./chemoton
+cd chemoton
+git checkout 3.1.0
+pip install -r requirements.txt
+pip install .
+cd ..
+
+# Install amk-tools
+git clone https://gitlab.com/dgarayr/amk_tools.git
+pip install -e ./amk_tools/
 
 # Install VizChemoton
 git clone https://github.com/petrusen/vizchemoton.git
