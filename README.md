@@ -62,16 +62,19 @@ Dependencies are detailed in the requierements.txt file and in the table below.
 conda create --name my_env python=3.6
 conda install -c conda-forge nodejs=14
 
-# Clone this repository
-git clone <this-repository>
-
-# Install the visualization repository
+# Install amk-tools
 git clone https://gitlab.com/dgarayr/amk_tools.git
 pip install -e ./amk_tools/ 
 
-# Install the reaction exploration repository
-git clone https://github.com/qcscine/heron.git
-pip install ./heron
+# Install Chemoton
+git clone https://github.com/qcscine/chemoton.git
+pip install -r ./chemoton/requirements.txt
+pip install ./chemoton
+
+# Install VizChemoton
+git clone https://github.com/petrusen/vizchemoton.git
+pip install -r ./vizchemoton/requirements.txt
+pip install ./vizchemoton
 
 ```
 
