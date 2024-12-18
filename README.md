@@ -1,9 +1,14 @@
 # VizChemoton - Visualization of Reaction Networks Generated with Chemoton
 
-This package allows the visualization of chemical reaction networks (CRNs) generated with [Chemoton](https://github.com/qcscine/chemoton)[1] through the generation of standalone HTML files with the [amk-tools](https://github.com/dgarayr/amk_tools),[2] ultimately allowing the user to interact with the network via browser.
+This package allows the **visualization of chemical reaction networks (CRNs)** generated with [Chemoton](https://github.com/qcscine/chemoton)[1] 
+through the generation of standalone HTML files with the [amk-tools](https://github.com/dgarayr/amk_tools),[2]ultimately allowing the user to interact 
+with the network **just via browser**.
 
-The following image shows which type of visualization (network on the left, structure on the right) the HTML file permits:
+
 ![Example Image](./docs/example_crn_html.png)
+
+*The image above shows which type of visualization (network on the left, structure on 
+the right) the HTML file permits*
 
 
 ## Introduction to Chemoton

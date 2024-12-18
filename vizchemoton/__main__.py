@@ -1,5 +1,8 @@
-'''Diego Garay-Ruiz, November 2023. Collection of helper functions to link amk-tools and grrm-tools, generating interactive
-HTML dashboards to visualize GRRM-generated reaction networks'''
+'''
+Enric Petrus, December 2024. Added SCINE helper functiosn to link with the amk-tools generation of html files.
+Diego Garay-Ruiz, November 2023. Collection of helper functions to link amk-tools and grrm-tools, generating interactive
+HTML dashboards to visualize GRRM-generated reaction networks.
+'''
 
 import sys
 import numpy as np
@@ -12,8 +15,6 @@ import networkx as nx
 import argparse
 from collections import Counter
 import numpy as np
-#import networkx as nx
-
 
 # SCINE imports
 import scine_utilities as utils
@@ -23,8 +24,6 @@ from scine_database.energy_query_functions import (get_energy_change,
     get_barriers_for_elementary_step_by_type,
     rate_constant_from_barrier, get_energy_for_structure
 )
-#from itertools import combinations
-#from kinetic_utility_library import *
 
 def get_energy_and_barriers(energy_type, es_id, elementary_steps, model1, structures, properties, es_from_graph):
 
@@ -43,7 +42,8 @@ def get_energy_and_barriers(energy_type, es_id, elementary_steps, model1, struct
     return _energy, barriers, not_None
 
 
-def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=False):
+def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=False, write_pathfinder=False,
+                                verbose=True):
     """
     Extract the chemical reactions, compounds and transition states from the MongoDB where the exploration
     with Chemoton was executed.
@@ -69,103 +69,73 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=
     # # # Load Pathfinder and assign NetworkX Digraph
     pathfinder = pf(manager)
 
-    if isinstance(pathfinder_json, str):
-        graph_json_filtered = pathfinder_json
-        pathfinder.load_graph(graph_json_filtered)
-    else:
-        print("HI")
+    if isinstance(read_pathfinder, str):
+        if verbose: print("## reading pathfinder object with name "+read_pathfinder)
+        pathfinder.load_graph(read_pathfinder)
+    elif isinstance(write_pathfinder, str):
+        if verbose: print("## writing new pathfinder object with name "+write_pathfinder)
         pathfinder.options.model = model1
         pathfinder.options.graph_handler = "barrier"
         pathfinder.options.use_structure_model = True
-        pathfinder.options.structure_model = model1  # primitive_model # db.Model("gfn2", "gfn2", "")
+        pathfinder.options.structure_model = model1
         pathfinder.build_graph()
-        pathfinder.export_graph("crn_pathfinder.json")
+        pathfinder.export_graph(write_pathfinder)
 
 
     # print(len([node for node in pathfinder.graph_handler.graph.nodes if ';' in node]) / 2)
 
     # # # List of compounds and reactions
-    cmp_list = [node for node in pathfinder.graph_handler.graph.nodes if ";" not in node]
     lhs_rxn_list = [node for node in pathfinder.graph_handler.graph.nodes if ";0;" in node]
-
-    cmp_dict = {}
-    stoich_id_dict = {}
-    excluded_rxn, activation_barriers = [], []
-    tetramolecular, l_new_reac, l_reac_id = 0, list(), list()
-    comp_idx = len(cmp_list)
-    trimolecular_constants = list()
-    my_list = []
     cmp_idx = 1
-    html_reactions, html_compounds = list(), dict()
+    cmp_dict, html_reactions, html_compounds = dict(), list(), dict()
 
+    if verbose: print("## iterating through reactions")
     for rxn_ind, rxn_id in enumerate(lhs_rxn_list):
+        # Iterate through the reations of the network
         rxn = db.Reaction(db.ID(rxn_id[:-3]), reactions)
         reactants = rxn.get_reactants(db.Side.BOTH)
         lhs, rhs = reactants
         s_lhs, s_rhs = len(lhs), len(rhs)
         reactants = (lhs, rhs)
 
-        if (s_lhs < 3 and s_rhs < 3):  # and not any(item in rxn_id for item in my_list):  # Unimolecular and Bimolecular
-            # # # Get reagent indices
-            r_index = [0.0, 0.0]
-            count = 0
+        if s_lhs < 3 and s_rhs < 3:
+
+            # Get reactant indexes
             cmp_dict_keys = cmp_dict.keys()
             if len(reactants[0]) == 1:
                 node_x = reactants[0][0].string()
-                if node_x in cmp_dict_keys:
-                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
-                else:
+                if node_x not in cmp_dict_keys:
                     cmp_dict[node_x] = cmp_idx
-                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
                     cmp_idx = cmp_idx + 1
-
             elif len(reactants[0]) == 2:
-
                 for node_i in [o.string() for o in reactants[0]]:
-                    if node_i in cmp_dict_keys:
-                        r_index[count * -1 + 1] = str(cmp_dict[node_i])
-                    else:
+                    if node_i not in cmp_dict_keys:
                         cmp_dict[node_i] = cmp_idx
-                        r_index[count * -1 + 1] = str(cmp_dict[node_i])
                         cmp_idx = cmp_idx + 1
-
+                # flasks (i.e., adducts) are depicted with //
                 node_x = "//".join(sorted([o.string() for o in reactants[0]]))
-                if node_x in cmp_dict_keys:
-                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
-                else:
+                if node_x not in cmp_dict_keys:
                     cmp_dict[node_x] = cmp_idx
-                    r_index[count * -1 + 1] = str(cmp_dict[node_x])
                     cmp_idx = cmp_idx + 1
 
-            p_index = [0.0, 0.0]
+            # Get product indexes
             if len(reactants[1]) == 1:
                 node_y = reactants[1][0].string()
-                if node_y in cmp_dict_keys:
-                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
-                else:
+                if node_y not in cmp_dict_keys:
                     cmp_dict[node_y] = cmp_idx
-                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
                     cmp_idx = cmp_idx + 1
-
             elif len(reactants[1]) == 2:
-
                 for node_i in [o.string() for o in reactants[1]]:
-                    if node_i in cmp_dict_keys:
-                        p_index[count * -1 + 1] = str(cmp_dict[node_i])
-                    else:
+                    if node_i not in cmp_dict_keys:
                         cmp_dict[node_i] = cmp_idx
-                        p_index[count * -1 + 1] = str(cmp_dict[node_i])
                         cmp_idx = cmp_idx + 1
-
+                # flasks (i.e., adducts) are depicted with //
                 node_y = "//".join(sorted([o.string() for o in reactants[1]]))
-                if node_y in cmp_dict_keys:
-                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
-                else:
+                if node_y not in cmp_dict_keys:
                     cmp_dict[node_y] = cmp_idx
-                    p_index[count * -1 + 1] = str(cmp_dict[node_y])
                     cmp_idx = cmp_idx + 1
 
-            # # # Get selected Elementary Step if present in graph
+            # Get elementary steps and energies
             if "elementary_step_id" in pathfinder.graph_handler.graph.nodes(data=True)[rxn_id]:
                 es_id = db.ID(
                     pathfinder.graph_handler.graph.nodes(data=True)[rxn_id]["elementary_step_id"])
@@ -178,17 +148,17 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=
                 elif not_None:
                     b1, b2 = barriers
                     node_ts = es_from_graph.get_transition_state().string() + ";"
-                    if node_ts in cmp_dict.keys():
-                        pass
-                    else:
+                    if node_ts not in cmp_dict.keys():
                         cmp_dict[node_ts] = cmp_idx
                         cmp_idx = cmp_idx + 1
                     html_reactions.append([cmp_dict[node_x], cmp_dict[node_y], cmp_dict[node_ts]])
 
+    if verbose: print("## preparing compounds json object")
     for compound_id in cmp_dict:
         html_compounds[cmp_dict[compound_id]] = {}
-
-        if "//" in compound_id:
+        if "//" in compound_id:  # checking the flasks
+            # if the user is interested in uploading the data in ioChem-BD, this conditional
+            # block should be disregarded by deactivating the following line:
             # continue
             ids = compound_id.split("//")
             html_compounds[cmp_dict[compound_id]]['crn_id'] = list()
@@ -228,11 +198,10 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=
                 html_compounds[cmp_dict[compound_id]]['program'].append(model1.program + " " + model1.version)
                 html_compounds[cmp_dict[compound_id]]['solvent'].append(model1.solvent)
                 html_compounds[cmp_dict[compound_id]]['solvation'].append(model1.solvation)
-
             html_compounds[cmp_dict[compound_id]]['mongodb_id'] = "//".join(
                 html_compounds[cmp_dict[compound_id]]['_mongodb_id'])
 
-        elif ";" in compound_id:  # its a ts
+        elif ";" in compound_id:  # checking the transitions states
             structure = compound_id[0:-1]
             structure_obj = db.Structure(db.ID(structure), structures)
             xyz = [(str(o.element), tuple(o.position)) for o in structure_obj.get_atoms()]
@@ -253,7 +222,7 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=
             html_compounds[cmp_dict[compound_id]]['solvent'] = model1.solvent
             html_compounds[cmp_dict[compound_id]]['solvation'] = model1.solvation
 
-        else:
+        else:  # checking compounds
             type_object = pathfinder.graph_handler.graph.nodes(data=True)[compound_id]["type"]
             if type_object == db.CompoundOrFlask.COMPOUND.name:
                 compound = db.Compound(db.ID(compound_id), compounds)
@@ -280,17 +249,52 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, pathfinder_json=
             html_compounds[cmp_dict[compound_id]]['solvent'] = model1.solvent  # model_obj.solvent
             html_compounds[cmp_dict[compound_id]]['solvation'] = model1.solvation  # model_obj.solvation
 
+    return html_reactions, html_compounds
+
+
+def write_compound_reactions_files(html_reactions, html_compounds, reaction_file, compound_file,
+                                   verbose=True):
+    '''Helper function to write reaction and compound files parsed from Chemoton
+    Input:
+    - html_reactions. List of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and transition states
+    from the set of compounds to define all elementary reactions in the network.
+    - html_compounds. Dictionary mapping node/ts indices to the different computed fields that are available -> energy, geometry,
+    charge, multiplicity.
+    charge, multiplicity.
+    Output:
+    - reaction_file, compounds_file. String, names of the files to be written
+    '''
+
+    if verbose: print("## writing reactions and compound files")
     # Open a file in write mode
-    with open('/home/petrusen/reactions.csv', 'w') as f:
+    with open(reaction_file, 'w') as f:
         # Loop through the list and write each tuple to the file
         for item in html_reactions:
             r, p, ts = item
             f.write("{r},{p},{ts}\n".format(r=r, p=p, ts=ts))
 
-    with open('/home/petrusen/compounds.json', 'w') as file:
+    with open(compound_file, 'w') as file:
         file.write(json.dumps(html_compounds))  # use `json.loads` to do the revers
 
-    return html_reactions, html_compounds
+    return None
+
+def read_compound_reactions_files(reaction_file,compounds_file):
+    '''Helper function to read reaction and compound files parsed from Chemoton
+    Input:
+    - reaction_file, compounds_file. String, names of the files to be read.
+    Output:
+    - reaction_tuples. List of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and transition states
+    from the set of compounds to define all elementary reactions in the network.
+    - compounds. Dictionary mapping node/ts indices to the different computed fields that are available -> energy, geometry,
+    charge, multiplicity.
+    '''
+    with open(reaction_file,"r") as freac:
+        reaction_tuples = [line.strip().split(",") for line in freac.readlines()]
+    with open(compounds_file,"r") as fcomp:
+        compounds = json.load(fcomp)
+
+    return reaction_tuples,compounds
+
 
 def build_dashboard(G,title,outfile,size=(1400,800),
                            layout_function=nx.kamada_kawai_layout,
@@ -567,45 +571,40 @@ def process_graph(reaction_list,compounds,dist_adduct=3.0):
         nd[1]["neighbors"] = list(G.neighbors(nd[0]))
     return G
 
-def read_files(reaction_file,compounds_file):
-    '''Helper function to read reaction and compound files parsed from Chemoton
-    Input:
-    - reaction_file, compounds_file. String, names of the files to be read.
-    Output:
-    - reaction_tuples. List of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and transition states
-    from the set of compounds to define all elementary reactions in the network.
-    - compounds. Dictionary mapping node/ts indices to the different computed fields that are available -> energy, geometry,
-    charge, multiplicity.
-    '''
-    with open(reaction_file,"r") as freac:
-        reaction_tuples = [line.strip().split(",") for line in freac.readlines()]
-    with open(compounds_file,"r") as fcomp:
-        compounds = json.load(fcomp)
-
-    return reaction_tuples,compounds
-
-
 
 def main():
 
-    db_name = "ozone_tme_lcpbe"
-    ip = 'localhost'
-    port = '8889'
-    dict_method = {"method_family": "dft", "method": 'lc-pbe', "basis_set": "def2-svp",
-                 "program": "orca", }
-    entries,compounds = get_reactions_and_compounds(db_name, ip, port, dict_method, 
-            pathfinder_json=False) #'crn_pathfinder.json')#pathfinder_json=False)
-   
-    entries,compounds = read_files("/home/petrusen/reactions.csv","/home/petrusen/compounds.json")
-    dist_adduct = 3.0
-    output_file = "network.html"
+    ####################################################################################################
+    # Parameters of the Chemoton exploration
+    db_name = "ozone_tme_lcpbe"     # name of the database
+    ip = 'localhost'                # ip where the database is hosted
+    port = '8889'                   # port to the database
+    dict_method = {"method_family": "dft", "method": 'lc-pbe',
+                   "basis_set": "def2-svp", "program": "orca", } # method of the exploration
+
+    # Files that only need to be generated once per exploration
+    pathfinder_file = "crn_pathfinder.json"             # pathfinder object of the CRN
+    reactions_file = "/home/petrusen/reactions3.csv"    # list of reactions
+    compounds_file = "/home/petrusen/compounds3.json"   # dictionary of the compounds
+
+    # Parameters for the generation of the html CRN file
+    output_file = "network2.html"
     title_html = "Chemoton graph"
-    G = process_graph(entries,compounds,3.0)
+    dist_adduct = 3.0
+    ####################################################################################################
+
+    # only needs to be run once, then data is stored in reaction and compound files (can be commented)
+    reactions,compounds = get_reactions_and_compounds(db_name, ip, port, dict_method,
+                        write_pathfinder=False, read_pathfinder=pathfinder_file)
+    write_compound_reactions_files(reactions,compounds,reactions_file, compounds_file)
+
+    # generation of the html from the previously generated file
+    reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file)
+    G = process_graph(reactions,compounds,dist_adduct)
     build_dashboard(G,title_html,output_file,
                                size=(1400,800),
                                layout_function=nx.kamada_kawai_layout,
                                map_field="degree")
-
 
 if __name__ == '__main__':
     main()
