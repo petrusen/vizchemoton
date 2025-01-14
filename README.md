@@ -67,18 +67,19 @@ conda install -c conda-forge nodejs=14
 git clone https://github.com/qcscine/chemoton.git
 cd chemoton
 git checkout 3.1.0
-pip install -r requirements.txt
-pip install .
+# make sure python3 from my_env is called
+python3 -m pip install -r requirements.txt
+python3 -m pip install .
 cd ..
 
 # Install amk-tools
 git clone https://gitlab.com/dgarayr/amk_tools.git
-pip install -e ./amk_tools/
+python3 -m pip install -e ./amk_tools/
 
 # Install VizChemoton
 git clone https://github.com/petrusen/vizchemoton.git
-pip install -r ./vizchemoton/requirements.txt
-pip install ./vizchemoton
+python3 -m pip install -r ./vizchemoton/requirements.txt
+python3 -m pip install ./vizchemoton
 
 ```
 
