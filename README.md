@@ -128,7 +128,14 @@ reactions of the reaction network.
 
 ### Usage of the HTML File
 
+Doubleclicking the html file will open a dashboard similar tas the diagram below. 
 
+![Example Image](./docs/html_manual.png)
+
+If a reader wishes to find a specific molecule in the network, we recommend using the Find module of 
+ioChemBD
+
+(insert image chemdraw box)
 
 ## References
 
