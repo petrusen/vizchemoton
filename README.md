@@ -11,6 +11,20 @@ with the network **just via browser**.
 the right) the HTML file permits*
 
 
+## Table of Contents
+
+1. [Introduction](#introduction)
+   - [Introduction to Chemoton](#introduction-to-chemoton)
+   - [Introduction to amk-tools](#introduction-to-amk-tools)
+2. [Code Overview](#code-overview)
+3. [Dependencies](#dependencies)
+4. [Installation](#installation)
+5. [Usage of the HTML Files](#usage-of-the-html-files)
+6. [References](#references)
+7. [Support and Contact](support-and-contact)
+
+---
+
 ## Introduction to Chemoton
 
 The research group of Markus Reiher at ETH Zürich has developed a the software enviroment [SCINE](https://github.com/qcscine) ("Software for Chemical Interaction Networks")[1] which pursues the performance of quantum chemical calculations with special focus on algorithmic stability, automation, interactivity, efficiency and error control. In this context, Chemoton is the SCINE module in charge of exploring CRNs in a fully automated fashion based on first-principles.[2] 
@@ -30,8 +44,16 @@ The research group of Carles Bo at ICIQ (Tarragona, Spain) developed a library, 
 
 ## Code overview
 
-In the following Figure we describe the different modules -described above- that VizChemoton
-uses to generate the html files.
+In the following diagram we describe the modules that VizChemoton
+uses to generate the html file.
+The full workflow starts from querying the Mongo-DB *(1)* using the SCINE modules *(2)* to obtain the reactions
+and compounds of the reaction network. Because querying the Mongo-DB might be a time-consuming step, we 
+have enabled the option to export the network as a json file, so that for future runs, the network can 
+be directly imported *(a)*. The reaction and compounds data are also stored in a csv and json file respectively 
+*(b)*. This allows importing the reaction and compound data without querying Mongo-DB nor the 
+SCINE dependencies. To generate the visualization of the network, the amk-tools is called *(4)* which ultimately
+writes the html file *(5)*.
+
 
 ![Example Image](./docs/vizchemoton_architecture.png)
 
@@ -54,7 +76,9 @@ Dependencies are detailed in the requierements.txt file and in the table below.
 | scine-utilities      | 9.0.0   |
 
 
-## Instalation 
+## Installation 
+
+Here we provide a short installation guide for VizChemoton based on using an anaconda environment (e.g., my_env).
 
 ```bash
 
@@ -83,7 +107,10 @@ python3 -m pip install ./vizchemoton
 
 ```
 
-## Usage of the HTML files
+## Example
+
+Before running the code, the user must specify the location of the Mongo-DB (ip, port and name) and 
+the exploration parameters (method, basis set ...). Moreover, the 
 
 ```bash
 
@@ -95,6 +122,13 @@ python3 -m viz_chemoton.py
 
 ```
 
+The code render an html file, with the path and name specified by the user, which contains the compounds and 
+reactions of the reaction network. 
+
+### Usage of the HTML File
+
+
+
 ## References
 
 1. T. Weymuth, J. P. Unsleber, P. L. Türtscher, M. Steiner, J.-G. Sobez, C. H. Müller, M. Mörchen,
@@ -104,3 +138,8 @@ V. Klasovita, S. A. Grimmel, M. Eckhoff, K.-S. Csizi, F. Bosia, M. Bensberg, M. 
 (DOI: 10.48550/arXiv.2406.09541)
 4. Diego Garay-Ruiz, Moises Alvarez-Moreno, Carles Bo, Emilio Martinez-Nunez. *ACS Phys. Chem Au* **2022**, 2, 3, 225-236.
 5. E. Martínez-Núñez, G. L. Barnes, D. R. Glowacki, S. Kopec, D. Peláez, A. Rodríguez, R. Rodríguez-Fernández, R. J. Shannon, J. J. P. Stewart, P. G. Tahoces, S. A. Vazquez, *J. Comput. Chem.* **2021**, 42(28), 2036.
+
+## Support and Contact
+
+Should you find any problem or bug, please write a short message
+to [enric.petrus@eawag.ch](enric.petrus@eawag.ch) 
