@@ -128,14 +128,19 @@ reactions of the reaction network.
 
 ### Usage of the HTML File
 
-Doubleclicking the html file will open a dashboard similar tas the diagram below. 
+Doubleclicking the html file will open a dashboard similar to the diagram below., where we have 
+depicted the description of the main built-in functionalities.
 
 ![Example Image](./docs/html_manual.png)
 
-If a reader wishes to find a specific molecule in the network, we recommend using the Find module of 
-ioChemBD
+If the reader wishes to find a specific molecule in the network, we recommend using the Find module of 
+[ioChem-BD](https://www.iochem-bd.org/). The diagram below shows the three steps: (1) select search by structure, (2) 
+draw the chemical structure that you are interested in, (3) if Results is greater than 0 press the button go.
+This will redirect you to the Browse module, where all the calculations involving the drawn structure will be listed. 
+Next, you should search on the right-side of the screen the box named Author, and click the name Enric Petrus.
+The Title name of the searched structure will be the same as the one in the network html file. 
 
-(insert image chemdraw box)
+![Example Image](./docs/iochem_find.png)
 
 ## References
 
