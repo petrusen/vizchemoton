@@ -5,39 +5,49 @@ HTML dashboards to visualize GRRM-generated reaction networks.
 '''
 
 import networkx as nx
-from .vizchemoton_module import get_reactions_and_compounds, write_compound_reactions_files, read_compound_reactions_files, process_graph, build_dashboard
-
+from .vizchemoton_module import get_reactions_and_compounds, write_compound_reactions_files, read_compound_reactions_files, process_graph, build_dashboard, load_config
 
 def main():
+    # Load configuration
+    config = load_config()
 
-    # Parameters of the Chemoton exploration
-    db_name = "ozone_tme_lcpbe"     # name of the database
-    ip = 'localhost'                # ip where the database is hosted
-    port = '8889'                   # port to the database
-    dict_method = {"method_family": "dft", "method": 'lc-pbe',
-                   "basis_set": "def2-svp", "program": "orca", } # method of the exploration
-    # Files that only need to be generated once per exploration
-    pathfinder_file = "crn_pathfinder.json"             # pathfinder object of the CRN
-    reactions_file = "reactions3.csv"    # list of reactions
-    compounds_file = "compounds3.json"   # dictionary of the compounds
-    # Parameters for the generation of the html CRN file
-    output_file = "network2.html"
-    title_html = "Chemoton graph"
-    dist_adduct = 3.0
+    # Parameters from config
+    db_active = config["db"]["active"]
+    db_pathfinder = config["db"]["pathfinder"]
+    db_name = config["db"]["name"]
+    ip = config["db"]["ip"]
+    port = config["db"]["port"]
+    dict_method = config["method"]
 
+    pathfinder_file = config["files"]["pathfinder"]
+    reactions_file = config["files"]["reactions"]
+    compounds_file = config["files"]["compounds"]
 
-    # only needs to be run once, then data is stored in reaction and compound files (can be commented)
-    reactions,compounds = get_reactions_and_compounds(db_name, ip, port, dict_method,
-                        write_pathfinder=False, read_pathfinder=pathfinder_file)
-    write_compound_reactions_files(reactions,compounds,reactions_file, compounds_file)
+    output_file = config["output"]["file"]
+    title_html = config["output"]["title"]
+    dist_adduct = config["graph"]["dist_adduct"]
 
-    # generation of the html from the previously generated file
-    reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file)
-    G = process_graph(reactions,compounds,dist_adduct)
-    build_dashboard(G,title_html,output_file,
-                               size=(1400,800),
-                               layout_function=nx.kamada_kawai_layout,
-                               map_field="degree")
+    size = tuple(config["graph"]["size"])
+    layout_function = getattr(nx, f"{config['graph']['layout']}_layout")
+    map_field = config["graph"]["map_field"]
+
+    if db_active: # the Mongo-DB is reachable
+
+        if db_pathfinder: # read the pathfinder object (to speed-up the process)
+             reactions, compounds = get_reactions_and_compounds(db_name, ip, port, dict_method,
+             write_pathfinder=False, read_pathfinder=pathfinder_file)
+        else:  # write the pathfinder object
+             reactions, compounds = get_reactions_and_compounds(db_name, ip, port, dict_method,
+             write_pathfinder=pathfinder_file, read_pathfinder=False)
+        # write the reactions and compounds
+        write_compound_reactions_files(reactions, compounds, reactions_file, compounds_file)
+
+    else: # the Mongo-DB is not reachable, or not necessary as reactions and compounds are stored in separate files
+        
+        reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file)
+        G = process_graph(reactions, compounds, dist_adduct)
+        build_dashboard(G, title_html, output_file, size=size, layout_function=layout_function, map_field=map_field)
+
 
 if __name__ == '__main__':
     main()

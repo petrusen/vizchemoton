@@ -11,6 +11,7 @@ import argparse
 import json
 
 #Third-Party Library Imports
+import yaml
 import numpy as np
 import networkx as nx
 import bokeh.plotting
@@ -26,6 +27,19 @@ from scine_database.energy_query_functions import (get_energy_change,
     get_barriers_for_elementary_step_by_type,
     rate_constant_from_barrier, get_energy_for_structure
 )
+
+def load_config(config_file="config.yaml"):
+    """
+    Reads the configuration yaml file where all the input parameters are defined.
+
+    Input: 
+    - config_file (str): string with the name of the config file
+
+    Output:
+    - yaml (dict): dictionary with the input parameters
+    """
+    with open(config_file, "r") as file:
+        return yaml.safe_load(file)
 
 def get_energy_and_barriers(energy_type, es_id, elementary_steps, model1, structures, properties, es_from_graph):
     """

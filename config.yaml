@@ -1,0 +1,28 @@
+db:
+  active: False
+  pathfinder: True 
+  name: "ozone_tme_lcpbe"
+  ip: "localhost"
+  port: "8889"
+
+method:
+  method_family: "dft"
+  method: "lc-pbe"
+  basis_set: "def2-svp"
+  program: "orca"
+
+files:
+  pathfinder: "./vizchemoton/resources/crn_pathfinder.json"
+  reactions: "./vizchemoton/resources/reactions.csv"
+  compounds: "./vizchemoton/resources/compounds.json"
+
+output:
+  file: "network.html"
+  title: "Chemoton graph"
+
+graph:
+  dist_adduct: 3.0
+  size: [1400, 800]
+  layout: "kamada_kawai"
+  map_field: "degree"
+
