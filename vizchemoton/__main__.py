@@ -4,19 +4,21 @@ Diego Garay-Ruiz, November 2023. Collection of helper functions to link amk-tool
 HTML dashboards to visualize GRRM-generated reaction networks.
 '''
 
+# Standard Library Imports
 import sys
-import numpy as np
+from collections import Counter
+import argparse
 import json
+
+#Third-Party Library Imports
+import numpy as np
 import networkx as nx
 import bokeh.plotting
 import bokeh.models as bkm
 import RXVisualizer as arxviz
 import networkx as nx
-import argparse
-from collections import Counter
-import numpy as np
 
-# SCINE imports
+# Project-Specific SCINE imports
 import scine_utilities as utils
 import scine_database as db
 from scine_chemoton.gears.pathfinder import Pathfinder as pf
@@ -26,20 +28,34 @@ from scine_database.energy_query_functions import (get_energy_change,
 )
 
 def get_energy_and_barriers(energy_type, es_id, elementary_steps, model1, structures, properties, es_from_graph):
+    """
+    Wrapper function Gets the elementary step ID with the lowest energy of the corresponding transition state of a
+    reaction.
 
-    _energy = get_energy_change(db.ElementaryStep(es_id, elementary_steps), energy_type,
-                                           model1, structures, properties)
-    barriers = get_barriers_for_elementary_step_by_type(es_from_graph, energy_type,
-                                                                    model1,
-                                                                    structures,
-                                                                    properties)
+    Input:
+      - energy_type (str): name of the energy property such as 'electronic_energy' or 'gibbs_free_energy'
+      - es_id (str): id of the elementary_step
+      - elementary_steps (db.Collection): the elementary step collection
+      - model1 (dict): dictionary with the method_family, method, basis_set and program keys.
+      - structures (db.Collection): the structures collection
+      - properties (db.Collection): the properties step collection
+      - es_from_graph (db.ElementaryStep): db object for the given es_id 
 
-    if None in barriers: # or None == _energy_i or None == _energy_j:
+    Returns:
+      - energy (float): energy state in the reaction.
+      - barriers (tuple): forward and backward energy barriers 
+      - not_None (bool): returns True if no None was found in the barriers tuple 
+    """
+    energy = get_energy_change(db.ElementaryStep(es_id, elementary_steps), energy_type, model1, structures, 
+                               properties)
+    barriers = get_barriers_for_elementary_step_by_type(es_from_graph, energy_type, model1, structures, properties)
+    
+    if None in barriers: 
         not_None = False
     else:
         not_None = True
 
-    return _energy, barriers, not_None
+    return energy, barriers, not_None
 
 
 def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=False, write_pathfinder=False,
