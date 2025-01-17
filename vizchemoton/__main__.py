@@ -45,8 +45,20 @@ def get_energy_and_barriers(energy_type, es_id, elementary_steps, model1, struct
 def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=False, write_pathfinder=False,
                                 verbose=True):
     """
-    Extract the chemical reactions, compounds and transition states from the MongoDB where the exploration
-    with Chemoton was executed.
+    Extract the chemical reactions, compounds and transition states from the Mongo-DB where the exploration
+    with Chemoton was run.
+
+    Input:
+      - db_name (str): name of the database
+      - ip (str): internet protocol to the database
+      - port (int): port number to the database
+      - read_pathfinder (bool, str, optional): either False if no file to read, or string with the path to the file
+      - write_pathfinder (bool, str, optional): either False if no file to write, or string with the path to the new file
+      - verbose (bool, optional): if True, enable verbose output. Default is True.
+
+    Returns:
+      - html_reactions (list): a list of tuples with the indexes of the reactant, product, and TS.
+      - html_compounds (dict): a dictionary for each compound containing relevant information (charge, spin, xyz ...)
     """
 
     manager = db.Manager()
@@ -254,16 +266,18 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=
 
 def write_compound_reactions_files(html_reactions, html_compounds, reaction_file, compound_file,
                                    verbose=True):
-    '''Helper function to write reaction and compound files parsed from Chemoton
+    """
+    Helper function to write reaction and compound files parsed from Chemoton.
+
     Input:
-    - html_reactions. List of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and transition states
-    from the set of compounds to define all elementary reactions in the network.
-    - html_compounds. Dictionary mapping node/ts indices to the different computed fields that are available -> energy, geometry,
-    charge, multiplicity.
-    charge, multiplicity.
+    - html_reactions (list): list of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and
+      transition states from the set of compounds to define all elementary reactions in the network.
+    - html_compounds (dict): dictionary mapping node/ts indices to the different computed fields that are available
+
     Output:
-    - reaction_file, compounds_file. String, names of the files to be written
-    '''
+    - reaction_file (str): path to the reactions file
+    - compounds_file (str): path to the compounds file
+    """
 
     if verbose: print("## writing reactions and compound files")
     # Open a file in write mode
@@ -279,15 +293,19 @@ def write_compound_reactions_files(html_reactions, html_compounds, reaction_file
     return None
 
 def read_compound_reactions_files(reaction_file,compounds_file):
-    '''Helper function to read reaction and compound files parsed from Chemoton
+    """
+    Helper function to read reaction and compound files parsed from Chemoton.
+
     Input:
-    - reaction_file, compounds_file. String, names of the files to be read.
+    - reaction_file (str): path to the reactions file
+    - compounds_file (str): path to the compounds file
+
     Output:
-    - reaction_tuples. List of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and transition states
-    from the set of compounds to define all elementary reactions in the network.
-    - compounds. Dictionary mapping node/ts indices to the different computed fields that are available -> energy, geometry,
-    charge, multiplicity.
-    '''
+    - reaction_tuples (list): list of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and
+      transition states from the set of compounds to define all elementary reactions in the network.
+    - compounds (dict): dictionary mapping node/ts indices to the different computed fields that are available.
+    """
+
     with open(reaction_file,"r") as freac:
         reaction_tuples = [line.strip().split(",") for line in freac.readlines()]
     with open(compounds_file,"r") as fcomp:
@@ -296,20 +314,21 @@ def read_compound_reactions_files(reaction_file,compounds_file):
     return reaction_tuples,compounds
 
 
-def build_dashboard(G,title,outfile,size=(1400,800),
-                           layout_function=nx.kamada_kawai_layout,
-                           map_field="energy"):
-    '''Wrapper function to generate HTML visualizations for a given network
+def build_dashboard(G,title,outfile,size=(1400,800), layout_function=nx.kamada_kawai_layout,  map_field="energy"):
+    """
+    Wrapper function to generate HTML visualizations for a given network.
+
     Input:
-    - G. nx.Graph object as generated from RXReader. For profile support, it should contain a graph["pathList"] property.
-    - title. String, title for the visualization.
-    - outfile. String, name of the output HTML file.
-    - size. Tuple of integers, size of the final visualization in pixels.
-    - layout_function. Function to generate graph layout.
-    - map_field. String, name of the field used for node coloring.
+    - G (nx.Graph): object as generated from RXReader. For profile support, it should contain a graph["pathList"] property.
+    - title (str): title for the visualization.
+    - outfile (str): name of the output HTML file.
+    - size (tuple): tuple of integers, size of the final visualization in pixels.
+    - layout_function (nx.object, optional): Function to generate graph layout.
+    - map_field (str): name of the field used for node coloring.
+
     Output:
-    - lay. Bokeh layout as generated by full_view_layout()
-    '''
+    - lay (bokey.obj): Bokeh layout as generated by full_view_layout()
+    """
 
     ### Define sizing
     w1 = int(size[0]*4/7)
@@ -407,38 +426,46 @@ def build_dashboard(G,title,outfile,size=(1400,800),
     return lay,bk_fig,bk_graph
 
 def scale_xyz_list(xyz,displ_vector=np.zeros(3)):
-    '''Bohr-to-angstrom scaling of a list of XYZ coordinates of the form [atom, [x, y, z]].
+    """
+    Bohr-to-angstrom scaling of a list of XYZ coordinates of the form [atom, [x, y, z]].
+
     Input:
-    - xyz. List of XYZ coordinates, containing a list [atom, [x,y,z]] with atom being a string and
-    x,y,z floats.
-    - displ_vector. np.Array for translating the geometry.
+    - xyz (list): XYZ coordinates, containing a list [atom, [x,y,z]] with atom being a string and x,y,z floats.
+    - displ_vector (np.Array, optional): for translating the geometry.
+
     Output:
-    - xyz_nw. List of scaled XYZ coordinates, in the same format as the input.
-    '''
+    - xyz_nw (list): scaled XYZ coordinates in the same format as the input.
+    """
+
     bohr_to_ang = 0.529
     xyz_arr = np.array([item[1] for item in xyz]) * bohr_to_ang + displ_vector
     xyz_nw = [[item[0],list(xyz_arr[ii])] for ii,item in enumerate(xyz)]
     return xyz_nw
 
 def xyz_list_to_xyz_block(xyz):
-    '''Transform a list of xyz coordinates [atom, [x, y, z]] into a string block.
+    """
+    Transform a list of xyz coordinates [atom, [x, y, z]] into a string block.
+
     Input:
-    - xyz. List of XYZ coordinates, containing a list [atom, [x,y,z]] with atom being a string and
-    x,y,z floats.
+    - xyz (list): XYZ coordinates, containing a list [atom, [x,y,z]] with atom being a string and x,y,z floats.
+
     Output:
-    - xyz_block. String, newline-joined block of the form a1,x1,y1,z2\na2,x2,y2,z2...
-    '''
+    - xyz_block (str): newline-joined block of the form a1,x1,y1,z2\na2,x2,y2,z2...
+    """
+
     xyz_block = "\n".join(["%s %.6f %.6f %.6f" % (item[0],*item[1]) for item in xyz])
     return xyz_block
 
 def formula_from_xyz_block(xyz):
-    '''Generates the molecular formula for a given XYZ geometry
+    """
+    Generates the molecular formula for a given XYZ geometry.
+
     Input:
-    - xyz. List of XYZ coordinates, containing a list [atom, [x,y,z]] with atom being a string and
-    x,y,z floats.
+    - xyz (list): XYZ coordinates, containing a list [atom, [x,y,z]] with atom being a string and x,y,z floats.
+
     Output:
-    - formula. String, molecular formula from the input geometry.
-    '''
+    - formula (str): molecular formula from the input geometry.
+    """
     labels = [item[0] for item in xyz]
     counter_list = sorted(Counter(labels).items())
     formula = ""
@@ -450,29 +477,37 @@ def formula_from_xyz_block(xyz):
     return formula
 
 def sort_edge_names(edge_tuple):
-    '''Helper function to sort edge tuples lexicographically.
+    """
+    Helper function to sort edge tuples lexicographically.
+
     Input:
-    - edge_tuple. Tuple with edge specification as a pair of node names.
+    - edge_tuple (tuple): edge specification as a pair of node names.
+
     Output:
-    - Lexicographically sorted tuple.
-    '''
+    - lexico_tuple (tuple): lexicographically sorted tuple.
+    """
+
     n1,n2 = [int(nd) for nd in edge_tuple]
     srt_pair = sorted([n1,n2])
-    return tuple([str(nd) for nd in srt_pair])
+    lexico_tuple = tuple([str(nd) for nd in srt_pair])
+    return lexico_tuple
 
 def process_graph(reaction_list,compounds,dist_adduct=3.0):
-    '''Wrapper function to generate a nx.Graph from a list of reactions and a dictionary of compounds,
+    """
+    Wrapper function to generate a nx.Graph from a list of reactions and a dictionary of compounds,
     including XYZ-formatted geometries where individual geometries of the species forming adducts are joined.
+
     Input:
-    - reaction_list. List of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and transition states
-    from the set of compounds to define all elementary reactions in the network.
-    - compounds. Dictionary mapping node/ts indices to the different computed fields that are available -> energy, geometry,
-    charge, multiplicity.
-    - dist_adduct. Float, distance in angstrom between the centers of mass of adduct fragments for the
+    - reaction_list (list): list of tuples of integers of the form [n1,n2,ts] specifying the indices of nodes and
+    transition states from the set of compounds to define all elementary reactions in the network.
+    - compounds (dict): dictionary mapping node/ts indices to the different computed fields that are available
+    - dist_adduct (float, optional): float, distance in angstrom between the centers of mass of adduct fragments for the
     joined 3D geometry.
+
     Output:
-    - G. nx.Graph containing network structure and the information required by RXVisualizer module to build the final dashboard.
-    '''
+    - G (nx.Graph): containing network structure and the information required by RXVisualizer module to build the final
+     dashboard.
+    """
     bohr_to_ang = 0.529177
 
     G = nx.Graph()
