@@ -18,8 +18,8 @@ def main():
                    "basis_set": "def2-svp", "program": "orca", } # method of the exploration
     # Files that only need to be generated once per exploration
     pathfinder_file = "crn_pathfinder.json"             # pathfinder object of the CRN
-    reactions_file = "/home/petrusen/reactions3.csv"    # list of reactions
-    compounds_file = "/home/petrusen/compounds3.json"   # dictionary of the compounds
+    reactions_file = "reactions3.csv"    # list of reactions
+    compounds_file = "compounds3.json"   # dictionary of the compounds
     # Parameters for the generation of the html CRN file
     output_file = "network2.html"
     title_html = "Chemoton graph"
