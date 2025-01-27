@@ -1,4 +1,4 @@
-## Manual for Configuration File
+## Manual for the Configuration File
 
 This manual explains the configuration parameters of the *config.yaml* file. A key decision is
 whether to connect to the MongoDB database, where Chemoton's exploration data is stored. By default,
@@ -7,6 +7,7 @@ VizChemoton renders the final `.html` file without requiring a MongoDB connectio
 However, if you wish to adapt VizChemoton to your own system, you need to configure the MongoDB
 connection (`db`) and specify the computational methodology (`method`) that was used.  
 
+---
 
 ### 1. Database (`db`)
 

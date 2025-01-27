@@ -94,6 +94,10 @@ conda create --name my_env python=3.6
 conda activate my_env
 conda install -c conda-forge nodejs=14
 
+# (optional) Create a folder to git clone and install 
+mkdir workingspace
+cd workingspace
+
 # Install Chemoton
 git clone https://github.com/qcscine/chemoton.git
 cd chemoton
@@ -105,12 +109,16 @@ cd ..
 
 # Install amk-tools
 git clone https://gitlab.com/dgarayr/amk_tools.git
-python3 -m pip install -e ./amk_tools/
+cd amk-tools
+python3 -m pip install -e .
+cd ..
 
 # Install VizChemoton
 git clone https://github.com/petrusen/vizchemoton.git
-python3 -m pip install -r ./vizchemoton/requirements.txt
-python3 -m pip install ./vizchemoton
+cd vizchemoton
+python3 -m pip install -r ./requirements.txt
+python3 -m pip install .
+cd ..
 
 ```
 

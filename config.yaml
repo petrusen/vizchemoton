@@ -1,5 +1,5 @@
 db:
-  active: True
+  active: False
   name: "ozone_tme_lcpbe"
   ip: "localhost"
   port: "8889"
@@ -12,17 +12,17 @@ method:
 
 files:
   pathfinder:
-    path: "./vizchemoton/resources/crn_pathfinder2.json"
-    mode: "write"
+    path: "./vizchemoton/resources/crn_pathfinder.json"
+    mode: "read"
   reactions:
     path: "./vizchemoton/resources/reactions2.csv"
-    mode: "write"
+    mode: "read"
   compounds:
     path: "./vizchemoton/resources/compounds2.json"
-    mode: "write"
+    mode: "read"
 
 output:
-  file: "network2.html"
+  file: "network.html"
   title: "Chemoton graph"
   verbose: True
 
