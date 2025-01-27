@@ -28,6 +28,22 @@ from scine_database.energy_query_functions import (get_energy_change,
     rate_constant_from_barrier, get_energy_for_structure
 )
 
+def vizchemoton_header():
+    """
+    Plain text function to signal the start of VizChemoton
+    """
+
+    ascii_text = r"""
+    __      ___      _____ _                          _              
+    \ \    / (_)    / ____| |                        | |             
+     \ \  / / _ ___| |    | |__   ___ _ __ ___   ___ | |_ ___  _ __  
+      \ \/ / | |_  / |    | '_ \ / _ \ '_ ` _ \ / _ \| __/ _ \| '_ \ 
+       \  /  | |/ /| |____| | | |  __/ | | | | | (_) | || (_) | | | |
+        \/   |_/___|\_____|_| |_|\___|_| |_| |_|\___/ \__\___/|_| |_|
+                                                                                                                         """
+    print(ascii_text)
+
+
 def load_config(config_file="config.yaml"):
     """
     Reads the configuration yaml file where all the input parameters are defined.
@@ -94,6 +110,7 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=
     manager = db.Manager()
     credentials = db.Credentials(ip, int(port), db_name)
     manager.set_credentials(credentials)
+    if verbose: print("## Connecting to the Mongo-DB")
     manager.connect()
     model1 = db.Model(dict_method["method_family"], dict_method["method"], dict_method["basis_set"])
     model1.program = dict_method["program"]
@@ -112,26 +129,23 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=
     pathfinder = pf(manager)
 
     if isinstance(read_pathfinder, str):
-        if verbose: print("## reading pathfinder object with name "+read_pathfinder)
+        if verbose: print("## Reading pathfinder object with name "+read_pathfinder)
         pathfinder.load_graph(read_pathfinder)
     elif isinstance(write_pathfinder, str):
-        if verbose: print("## writing new pathfinder object with name "+write_pathfinder)
+        if verbose: print("## Writing pathfinder object with name "+write_pathfinder)
         pathfinder.options.model = model1
         pathfinder.options.graph_handler = "barrier"
-        pathfinder.options.use_structure_model = True
-        pathfinder.options.structure_model = model1
+        #pathfinder.options.use_structure_model = True
+        #pathfinder.options.structure_model = model1
         pathfinder.build_graph()
         pathfinder.export_graph(write_pathfinder)
-
-
-    # print(len([node for node in pathfinder.graph_handler.graph.nodes if ';' in node]) / 2)
 
     # # # List of compounds and reactions
     lhs_rxn_list = [node for node in pathfinder.graph_handler.graph.nodes if ";0;" in node]
     cmp_idx = 1
     cmp_dict, html_reactions, html_compounds = dict(), list(), dict()
 
-    if verbose: print("## iterating through reactions")
+    if verbose: print("## Iterating through reactions in the network")
     for rxn_ind, rxn_id in enumerate(lhs_rxn_list):
         # Iterate through the reations of the network
         rxn = db.Reaction(db.ID(rxn_id[:-3]), reactions)
@@ -195,7 +209,7 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=
                         cmp_idx = cmp_idx + 1
                     html_reactions.append([cmp_dict[node_x], cmp_dict[node_y], cmp_dict[node_ts]])
 
-    if verbose: print("## preparing compounds json object")
+    if verbose: print("## Creating compounds and reaction objects")
     for compound_id in cmp_dict:
         html_compounds[cmp_dict[compound_id]] = {}
         if "//" in compound_id:  # checking the flasks
@@ -226,7 +240,6 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=
                 structure = compound.get_centroid()
                 structure_obj = db.Structure(structure, structures)
                 xyz = [(str(o.element), tuple(o.position)) for o in structure_obj.get_atoms()]
-                #print(structure_obj.get_charge(), structure_obj.multiplicity, dir(structure_obj))
                 z, s = structure_obj.get_charge(), structure_obj.multiplicity
                 e = get_energy_for_structure(structure_obj, 'electronic_energy', model1, structures, properties)
                 e_kj = e * utils.KJPERMOL_PER_HARTREE
@@ -251,7 +264,6 @@ def get_reactions_and_compounds(db_name, ip, port, dict_method, read_pathfinder=
             e = get_energy_for_structure(structure_obj, 'electronic_energy', model1, structures, properties)
             e_kj = e * utils.KJPERMOL_PER_HARTREE
             model_obj = structure_obj.get_model()
-            # print(structure_obj.get_charge(), structure_obj.multiplicity, dir(structure_obj))
             html_compounds[cmp_dict[compound_id]]['crn_id'] = "ts" + str(cmp_dict[compound_id])
             html_compounds[cmp_dict[compound_id]]['mongodb_id'] = compound_id
             html_compounds[cmp_dict[compound_id]]['xyz'] = xyz
@@ -309,7 +321,7 @@ def write_compound_reactions_files(html_reactions, html_compounds, reaction_file
     - compounds_file (str): path to the compounds file
     """
 
-    if verbose: print("## writing {f1} and {f2} files".format(f1=html_reactions, f2=html_compounds))
+    if verbose: print("## Writing {f1} and {f2} files".format(f1=html_reactions, f2=html_compounds))
     # Open a file in write mode
     with open(reaction_file, 'w') as f:
         # Loop through the list and write each tuple to the file
@@ -336,7 +348,7 @@ def read_compound_reactions_files(reaction_file,compounds_file, verbose=True):
     - compounds (dict): dictionary mapping node/ts indices to the different computed fields that are available.
     """
 
-    if verbose: print("## reading {f1} and {f2} files".format(f1=reaction_file, f2=compounds_file))
+    if verbose: print("## Reading {f1} and {f2} files".format(f1=reaction_file, f2=compounds_file))
     with open(reaction_file,"r") as freac:
         reaction_tuples = [line.strip().split(",") for line in freac.readlines()]
     with open(compounds_file,"r") as fcomp:
@@ -360,7 +372,7 @@ def build_dashboard(G,title,outfile,size=(1400,800), layout_function=nx.kamada_k
     Output:
     - lay (bokey.obj): Bokeh layout as generated by full_view_layout()
     """
-    if verbose: print("## writing {f1} output file".format(f1=outfile))
+    if verbose: print("## Writing {f1} output file".format(f1=outfile))
 
     ### Define sizing
     w1 = int(size[0]*4/7)

@@ -5,7 +5,7 @@ HTML dashboards to visualize GRRM-generated reaction networks.
 '''
 
 import networkx as nx
-from .vizchemoton_module import get_reactions_and_compounds, write_compound_reactions_files, read_compound_reactions_files, process_graph, build_dashboard, load_config
+from .vizchemoton_module import  vizchemoton_header, get_reactions_and_compounds, write_compound_reactions_files, read_compound_reactions_files, process_graph, build_dashboard, load_config
 
 def main():
     # Load configuration
@@ -13,7 +13,6 @@ def main():
 
     # Parameters from config
     db_active = config["db"]["active"]
-    db_pathfinder = config["db"]["pathfinder"]
     db_name = config["db"]["name"]
     ip = config["db"]["ip"]
     port = config["db"]["port"]
@@ -37,6 +36,8 @@ def main():
     layout_function = getattr(nx, f"{config['graph']['layout']}_layout")
     map_field = config["graph"]["map_field"]
 
+    # Start of Vizchemoton
+    vizchemoton_header()
     if db_active: # the Mongo-DB is reachable
         
         if pathfinder_mode == 'read': # read the pathfinder object (to speed-up the process)
@@ -51,11 +52,10 @@ def main():
         if reactions_mode == 'write' and compounds_mode == 'write':
             write_compound_reactions_files(reactions, compounds, reactions_file, compounds_file, verbose=verbose)
 
-    else: # the Mongo-DB is not reachable, or not necessary as reactions and compounds are stored in separate files
-        if reactions_mode == 'read' and compounds_mode == 'read':
-            reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file, verbose=verbose)
-            G = process_graph(reactions, compounds, dist_adduct)
-            build_dashboard(G, title_html, output_file, size=size, layout_function=layout_function, map_field=map_field)
+    #else: # the Mongo-DB is not reachable, or not necessary as reactions and compounds are stored in separate files
+    reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file, verbose=verbose)
+    G = process_graph(reactions, compounds, dist_adduct)
+    build_dashboard(G, title_html, output_file, size=size, layout_function=layout_function, map_field=map_field)
 
 
 if __name__ == '__main__':
