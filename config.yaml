@@ -12,17 +12,26 @@ method:
   program: "orca"
 
 files:
-  pathfinder: "./vizchemoton/resources/crn_pathfinder.json"
-  reactions: "./vizchemoton/resources/reactions.csv"
-  compounds: "./vizchemoton/resources/compounds.json"
+  pathfinder:
+    path: "./vizchemoton/resources/crn_pathfinder.json"
+    mode: "r"
+  reactions:
+    path: "./vizchemoton/resources/reactions.csv"
+    mode: "r"
+  compounds:
+    path: "./vizchemoton/resources/compounds.json"
+    mode: "r"
 
 output:
-  file: "network.html"
+  file: "network2.html"
   title: "Chemoton graph"
+  verbose: True
 
 graph:
   dist_adduct: 3.0
   size: [1400, 800]
   layout: "kamada_kawai"
   map_field: "degree"
+
+
 
