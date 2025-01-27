@@ -73,8 +73,8 @@ Dependencies are detailed in the requirements.txt file and in the table below.
 | Package         | Version |
 |-----------------|---------|
 | python          | 3.6.x   |
-| amktools        | x.x.x   |
-| nodejs          | 14.0.0  |
+| amktools        | 0.0.0   |
+| ninja2          | 2.11.3  |
 | scine-chemoton  | 3.1.0   |
 | scine-database  | 1.3.0   |
 | scine-sparrow   | 5.1.0   |
@@ -89,14 +89,14 @@ Here we provide a short installation guide for VizChemoton based on using an ana
 
 ```bash
 
-# Create a conda enviroment
-conda create --name my_env python=3.6
-conda activate my_env
-conda install -c conda-forge nodejs=14
+# Initialize conda
+source $(conda info --base)/etc/profile.d/conda.sh
 
-# (optional) Create a folder to git clone and install 
-mkdir workingspace
-cd workingspace
+# Create the conda environment with Python 3.6
+conda create --name my_env python=3.6
+
+# Activate the conda environment
+conda activate my_env
 
 # Install Chemoton
 git clone https://github.com/qcscine/chemoton.git
@@ -109,7 +109,7 @@ cd ..
 
 # Install amk-tools
 git clone https://gitlab.com/dgarayr/amk_tools.git
-cd amk-tools
+cd amk_tools
 python3 -m pip install -e .
 cd ..
 
@@ -118,7 +118,6 @@ git clone https://github.com/petrusen/vizchemoton.git
 cd vizchemoton
 python3 -m pip install -r ./requirements.txt
 python3 -m pip install .
-cd ..
 
 ```
 
@@ -130,6 +129,9 @@ with the data in the *./vizchemoton/resources* folder. In the *.docs/manual.md* 
 of the parameters in config.py.
 
 ```bash
+
+# Activate conda environment 
+conda activate my_env
 
 # Edit the config file
 vi config.yaml
