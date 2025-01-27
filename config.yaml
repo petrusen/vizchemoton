@@ -15,10 +15,10 @@ files:
     path: "./vizchemoton/resources/crn_pathfinder.json"
     mode: "read"
   reactions:
-    path: "./vizchemoton/resources/reactions2.csv"
+    path: "./vizchemoton/resources/reactions.csv"
     mode: "read"
   compounds:
-    path: "./vizchemoton/resources/compounds2.json"
+    path: "./vizchemoton/resources/compounds.json"
     mode: "read"
 
 output:
