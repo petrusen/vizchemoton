@@ -14,13 +14,13 @@ method:
 files:
   pathfinder:
     path: "./vizchemoton/resources/crn_pathfinder.json"
-    mode: "r"
+    mode: "read"
   reactions:
     path: "./vizchemoton/resources/reactions.csv"
-    mode: "r"
+    mode: "read"
   compounds:
     path: "./vizchemoton/resources/compounds.json"
-    mode: "r"
+    mode: "read"
 
 output:
   file: "network2.html"

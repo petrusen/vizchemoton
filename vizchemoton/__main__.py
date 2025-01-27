@@ -38,26 +38,22 @@ def main():
     map_field = config["graph"]["map_field"]
 
     if db_active: # the Mongo-DB is reachable
-
+        
         if pathfinder_mode == 'read': # read the pathfinder object (to speed-up the process)
-             if verbose: print("reading the {f} file".format(f=pathfinder_file))
              reactions, compounds = get_reactions_and_compounds(db_name, ip, port, dict_method,
-             write_pathfinder=False, read_pathfinder=pathfinder_file)
+             write_pathfinder=False, read_pathfinder=pathfinder_file, verbose=verbose)
 
         elif pathfinder_mode == 'write':  # write the pathfinder object
-             if verbose: print("writing the {f} file".format(f=pathfinder_file))
              reactions, compounds = get_reactions_and_compounds(db_name, ip, port, dict_method,
-             write_pathfinder=pathfinder_file, read_pathfinder=False)
+             write_pathfinder=pathfinder_file, read_pathfinder=False, verbose=verbose)
 
         # write the reactions and compounds
         if reactions_mode == 'write' and compounds_mode == 'write':
-            if verbose: print("writing the {f1} and {f2} files".format(f1=reactions_file, f2=compounds_file))
-            write_compound_reactions_files(reactions, compounds, reactions_file, compounds_file)
+            write_compound_reactions_files(reactions, compounds, reactions_file, compounds_file, verbose=verbose)
 
     else: # the Mongo-DB is not reachable, or not necessary as reactions and compounds are stored in separate files
         if reactions_mode == 'read' and compounds_mode == 'read':
-            if verbose: print("reading the {f1} and {f2} files".format(f1=reactions_file, f2=compounds_file))
-            reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file)
+            reactions, compounds = read_compound_reactions_files(reactions_file, compounds_file, verbose=verbose)
             G = process_graph(reactions, compounds, dist_adduct)
             build_dashboard(G, title_html, output_file, size=size, layout_function=layout_function, map_field=map_field)
 
