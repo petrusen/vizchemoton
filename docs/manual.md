@@ -1,17 +1,17 @@
 ## Manual for Configuration File
 
-This manual explains the configuration parameters of the config.yaml file for an optimal use 
-of VizChemoton.
+This manual explains the configuration parameters of the *config.yaml* file. A key decision is
+whether to connect to the MongoDB database, where Chemoton's exploration data is stored. By default,
+VizChemoton renders the final `.html` file without requiring a MongoDB connection 
+(`db.active`: `False`), as the reactions and compounds data are stored in the *resources* folder.
+However, if you wish to adapt VizChemoton to your own system, you need to configure the MongoDB
+connection (`db`) and specify the computational methodology (`method`) that was used.  
+
 
 ### 1. Database (`db`)
 
 - **active** (`bool`): Enables (`True`) or disables (`False`) the use of the Mongo-DB. If it is
-disabled, then this section is omitted. This feature is meant for scenarios where either the 
-Mongo-DB is not reachable (but one has already the reaction.csv and compound.json file), or the 
-Mongo-DB is very large so that the querying process comes a serious bottleneck of the workflow. 
-- **pathfinder** (`bool`): Enables (`True`) or disables (`False`) the use of json file generated
-by PATHFinder for the CRN of choice. This feature aims at speeding up the generation of the html
-file, even though it still requires to query the Mongo-DB. 
+disabled, then this section is omitted.  
 - **name** (`str`): Name of the Mongo-DB.
 - **ip** (`str`): IP address of the Mongo-DB server.
 - **port** (`str`): Port number for Mongo-DB communication.
@@ -27,15 +27,20 @@ file, even though it still requires to query the Mongo-DB.
 
 #### pathfinder
 - **path** (`str`): Path to the json file containing CRN data.
-- **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`)
+- **mode** (`str`): Either read a preexisting file (`read`), or write a new file (`write`). Even if
+it is set to `read`, it will be necessary to have an active connection to the Mongo-DB.
 
 #### reactions
 - **path** (`str`): Path to the csv file containing reaction data.
-- **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`)
+- **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`). If one
+sets it to `read`, because there is a preexisting file, it is not necessary an active connections
+to the Mongo-DB.
 
 #### compounds
 - **path** (`str`): Path to the json file containing compound data.
-- **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`)
+- **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`). If one
+sets it to `read`, because there is a preexisting file, it is not necessary an active connections
+to the Mongo-DB.
 
 ### 4. Graph Settings (`graph`)
 
@@ -49,8 +54,11 @@ file, even though it still requires to query the Mongo-DB.
 
 - **file** (`str`): Output file name for the generated network visualization.
 - **title** (`str`): Title of the network visualization.
+- **verbose** (`bool`): Enables (`True`) or disables (`False`) the call to the print statements during
+runtime of the code.
 
 
 ---
+
 
 
