@@ -5,7 +5,7 @@ setup(
     version='0.1.0',
     packages=find_packages(),
     author='Enric Petrus, Diego Garay-Ruiz',
-    author_email= ['enricpz@icloud.com'],
+    author_email= ['enric.petrus@eawag.ch'],
     description='A package for visualizing Chemoton data.',
     long_description=open('README.md').read(),
     url='https://github.com/petrusen/vizchemoton',
