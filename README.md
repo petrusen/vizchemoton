@@ -136,7 +136,7 @@ conda activate my_env
 # Edit the config file
 vi config.yaml
 
-# Run the code of this repository to obtain the html
+# Run the code of this repository (at the /vizchemoton level) to obtain the html
 python3 -m viz_chemoton.py 
 
 ```
