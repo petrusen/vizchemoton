@@ -74,7 +74,7 @@ Dependencies are detailed in the requirements.txt file and in the table below.
 |-----------------|---------|
 | python          | 3.6.x   |
 | amktools        | 0.0.0   |
-| ninja2          | 2.11.3  |
+| jinja2          | 3.0.0   |
 | scine-chemoton  | 3.1.0   |
 | scine-database  | 1.3.0   |
 | scine-sparrow   | 5.1.0   |
@@ -123,10 +123,10 @@ python3 -m pip install .
 
 ## 6. Example
 
-Before running the code, the user should edit the config.py to tailor the application of VizChemoton to the given 
+Before running the code, the user should edit the config.yaml to tailor the application of VizChemoton to the given 
 specific system. Even so, the default config.yaml is set to that the user can run VizChemoton just out-of-the-box 
 with the data in the *./vizchemoton/resources* folder. In the *.docs/manual.md* we provide a detailed explanation
-of the parameters in config.py.
+of the parameters in config.yaml.
 
 ```bash
 
