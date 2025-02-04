@@ -11,11 +11,11 @@ connection (`db`) and specify the computational methodology (`method`) that was 
 
 ### 1. Database (`db`)
 
-- **active** (`bool`): Enables (`True`) or disables (`False`) the use of the Mongo-DB. If it is
+- **active** (`bool`): Enables (`True`) or disables (`False`) the use of the MongoDB. If it is
 disabled, then this section is omitted.  
-- **name** (`str`): Name of the Mongo-DB.
-- **ip** (`str`): IP address of the Mongo-DB server.
-- **port** (`str`): Port number for Mongo-DB communication.
+- **name** (`str`): Name of the MongoDB.
+- **ip** (`str`): IP address of the MongoDB server.
+- **port** (`str`): Port number for MongoDB communication.
 
 ### 2. Computational Method (`method`)
 
@@ -29,19 +29,19 @@ disabled, then this section is omitted.
 #### pathfinder
 - **path** (`str`): Path to the json file containing CRN data.
 - **mode** (`str`): Either read a preexisting file (`read`), or write a new file (`write`). Even if
-it is set to `read`, it will be necessary to have an active connection to the Mongo-DB.
+it is set to `read`, it will be necessary to have an active connection to the MongoDB.
 
 #### reactions
 - **path** (`str`): Path to the csv file containing reaction data.
 - **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`). If one
 sets it to `read`, because there is a preexisting file, it is not necessary an active connections
-to the Mongo-DB.
+to the MongoDB.
 
 #### compounds
 - **path** (`str`): Path to the json file containing compound data.
 - **mode** (`str`): Either read a preexisting file (`read`) or write a new file (`write`). If one
 sets it to `read`, because there is a preexisting file, it is not necessary an active connections
-to the Mongo-DB.
+to the MongoDB.
 
 ### 4. Graph Settings (`graph`)
 

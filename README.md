@@ -51,11 +51,11 @@ discovery program developed by Emilio Martinez Nuñez (Galicia, Spain).[5]
 ## 3. VizChemoton Code Overview
 
 In the following diagram we describe the modules that VizChemoton uses to generate the .html file.
-The full workflow starts from querying the Mongo-DB *(1)* using the SCINE modules *(2)* to obtain the reactions
-and compounds of the reaction network. Because querying the Mongo-DB might be a time-consuming step, we 
+The full workflow starts from querying the MongoDB *(1)* using the SCINE modules *(2)* to obtain the reactions
+and compounds of the reaction network. Because querying the MongoDB might be a time-consuming step, we 
 have enabled the option to export the network as a .json file, so that for future runs, the network can 
 be directly imported *(a)*. The reaction and compounds data are also stored in a .csv and .json files respectively 
-*(b)*. This allows importing the reaction and compound data without querying Mongo-DB nor the 
+*(b)*. This allows importing the reaction and compound data without querying MongoDB nor the 
 SCINE dependencies. To generate the visualization of the network, the amk-tools is called *(4)* which ultimately
 writes the .html file *(5)*.
 
